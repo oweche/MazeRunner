@@ -228,20 +228,29 @@ else:
     '''animate_path_step(path)
     blink_path(path, times=2)
     show_path(path)'''
-    facing = '+y' #Front
-    for step in range(len(dist)):
-        current = path[step]
-        if(step<len(dist)-1): #next stuff if your not at goal yet to prevent outofbond
-            dx = current[step][0] - current[step+1][0]
-            dy = current[step][1] - current[step+1][1]
-        if (dx==1):#need to go +x
-            facing = go(facing,'+x')
-        elif (dx==-1):#need to go -x
-            facing = go(facing,'-x')
-        elif (dy == 1):#need to go +y
-            facing = go(facing, '+y')
-        else:
-            facing = go(facing, '-y') #need to go -y
+    while True:
+        if button_a.was_pressed():
+            facing = '+y' #Front
+            for step in range(len(dist)):
+                current = path[step]
+                if(step<len(dist)-1): #next stuff if your not at goal yet to prevent outofbond
+                    dx = current[step][0] - current[step+1][0]
+                    dy = current[step][1] - current[step+1][1]
+                if (dx==1):#need to go +x
+                    facing = go(facing,'+x')
+                    facing = '+x'
+                elif (dx==-1):#need to go -x
+                    facing = go(facing,'-x')
+                    facing = '-x'
+                elif (dy == 1):#need to go +y
+                    facing = go(facing, '+y')
+                    facing = '+y'
+                else:
+                    facing = go(facing, '-y') #need to go -y
+                    facing = '-y'
+            display.show(Image.HEART)
+            sleep(1000)
+            break
             
 
 ##TODO Make function update facing
