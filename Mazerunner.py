@@ -2,7 +2,7 @@
 # Shows a 5x5 grid with barriers (1), open (0), start (S), end (X),
 # runs a wavefront (BFS) shortest path, and displays the path.
 
-from microbit import display, sleep
+from microbit import *
 import robotbit_library as r
 
 W, H = 5, 5
@@ -153,24 +153,34 @@ def show_path(path):
     for (x, y) in path:
         if (x, y) != start and (x, y) != goal:
             display.set_pixel(x, y, BRIGHT_PATH)
+def stop_motors():
+    r.motor(M1A, 0)
+    r.motor(M2B, 0)
+
 def forward_a_block():
-    r.motor(M1A,-LEFT_POWR)
-    r.motor(M2B,RIGHT_POWR)
+    r.motor(M1A, -LEFT_POWR)
+    r.motor(M2B, RIGHT_POWR)
     sleep(FWD_BLOCK_TIME)
+    stop_motors()
 
 def left_90deg():
     r.motor(M1A,-100)
     r.motor(M2B,-100)
     sleep(TURN_LEFT_TIME)
+    stop_motors()
+
 
 def right_90deg():
     r.motor(M1A,100)
     r.motor(M2B,100)
     sleep(TURN_RIGHT_TIME)
+    stop_motors()
+
 
 def go(Currentfacing, Target): 
     if(Currentfacing == Target):#facing where we want to go
         forward_a_block() 
+        #endingfacing = facing
     else:            
         if(Currentfacing == '+y'):#facing up
             if(Target == '+x'):
@@ -196,7 +206,7 @@ def go(Currentfacing, Target):
             elif(Target == '+x'):
                 right_90deg()
                 right_90deg()
-        if(Currentfacing == '-y'):#facing right
+        if(Currentfacing == '-y'):#facing down
             if(Target == '-x'):
                 right_90deg()
             elif(Target == '+x'):
@@ -231,22 +241,24 @@ else:
     while True:
         if button_a.was_pressed():
             facing = '+y' #Front
-            for step in range(len(dist)):
+            for step in range(len(path)-1):
                 current = path[step]
                 if(step<len(dist)-1): #next stuff if your not at goal yet to prevent outofbond
-                    dx = current[step][0] - current[step+1][0]
-                    dy = current[step][1] - current[step+1][1]
-                if (dx==1):#need to go +x
-                    facing = go(facing,'+x')
+                    current = path[step]
+                    next_cell = path[step + 1]
+                    dx = next_cell[0] - current[0]
+                    dy = next_cell[1] - current[1]
+                if (dx==1):#need to go + x
+                    go(facing,'+x')
                     facing = '+x'
                 elif (dx==-1):#need to go -x
-                    facing = go(facing,'-x')
+                    go(facing,'-x')
                     facing = '-x'
                 elif (dy == 1):#need to go +y
-                    facing = go(facing, '+y')
+                    go(facing, '+y')
                     facing = '+y'
                 else:
-                    facing = go(facing, '-y') #need to go -y
+                    go(facing, '-y') #need to go -y
                     facing = '-y'
             display.show(Image.HEART)
             sleep(1000)
