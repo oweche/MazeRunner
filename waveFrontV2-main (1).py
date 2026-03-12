@@ -159,11 +159,6 @@ def show_path(path):
             display.set_pixel(x, y, BRIGHT_PATH)
 
 def perform(path):
-    forward()
-    backward()
-    left()
-    right()
-
     for i in range(len(path)-1):
 
         dx = path[i+1][0] - path[i][0]
