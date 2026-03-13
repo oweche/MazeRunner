@@ -19,7 +19,6 @@ r.setup()
 radio.config(channel=chnl)
 radio.on()
 
-W, H = 5, 5
 
 # -------------------------------------------------------------------
 # EDIT THIS GRID for your scenarios:
@@ -27,13 +26,6 @@ W, H = 5, 5
 # '1' = barrier, '0' = open space.
 # Each string must be length 5, and there must be 5 rows.
 # -------------------------------------------------------------------
-grid_text = [
-    "S0100",
-    "00100",
-    "01110",
-    "00010",
-    "1000X",
-]
 
 # Brightness map (0..9)
 BRIGHT_OPEN   = 1
@@ -43,6 +35,15 @@ BRIGHT_END    = 8
 BRIGHT_PATH   = 9
 
 # Parse the text grid -> (grid: 0/1), start, goal
+def receive_map():
+    display.show(Image.ARROW_S)  # indicate waiting
+    while True:
+        msg = radio.receive()
+        if msg and len(msg) == 25:
+            # Split the flat string into rows of length 5
+            return [msg[i*5:(i+1)*5] for i in range(5)]
+        sleep(50)
+grid_text = receive_map()
 grid = [[0] * W for _ in range(H)]
 start = None
 goal = None
@@ -160,7 +161,6 @@ def show_path(path):
 
 def perform(path):
     for i in range(len(path)-1):
-
         dx = path[i+1][0] - path[i][0]
         dy = path[i+1][1] - path[i][1]
 
@@ -170,52 +170,50 @@ def perform(path):
         elif dx == -1:   # move left
             left()
 
-        elif dy == 1:    # move down
+        elif dy == -1:    # move down
             backward()
 
-        elif dy == -1:   # move up
+        elif dy == 1:   # move up
             forward()
 
         sleep(200)
         
-
-
         
 def forward():
     Drive(60, 60)
     display.show(Image.ARROW_N)
-    sleep(2400)
+    sleep(950)
     Drive(0,0)
 
 def backward():
     Drive(-60, -60)
     display.show(Image.ARROW_S)
-    sleep(2400)
+    sleep(950)
     Drive(0,0)
 
 def right():
-    Drive(30,-30)
+    Drive(-60,60)
     display.show(Image.ARROW_E)
-    sleep(200)
+    sleep(350)
     Drive(60,60)
-    sleep(2400)
-    Drive(-30, 30)
-    sleep(200)
+    sleep(870)
+    Drive(60, -60)
+    sleep(410)
     Drive(0,0)
 
 def left():
-    Drive(-30, 30)
+    Drive(60, -60)
     display.show(Image.ARROW_W)
-    sleep(200)
+    sleep(410)
     Drive(60,60)
-    sleep(2400)
-    Drive(30,-30)
-    sleep(200)
+    sleep(870)
+    Drive(-60, 60)
+    sleep(350)
     Drive(0,0)
 
 def Drive(lft,rgt):
 # Receive the percent power to drive each motor in a specific direction
-    r.motor(M2B, lft * .62)
+    r.motor(M2B, lft * 1)
     r.motor(M1A, -rgt)
 
 
