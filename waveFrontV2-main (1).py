@@ -19,6 +19,7 @@ r.setup()
 radio.config(channel=chnl)
 radio.on()
 
+W, H = 5, 5
 
 # -------------------------------------------------------------------
 # EDIT THIS GRID for your scenarios:
@@ -36,7 +37,7 @@ BRIGHT_PATH   = 9
 
 # Parse the text grid -> (grid: 0/1), start, goal
 def receive_map():
-    display.show(Image.ARROW_S)  # indicate waiting
+    display.show(Image.ARROW_S)  # Displays while waiting
     while True:
         msg = radio.receive()
         if msg and len(msg) == 25:
