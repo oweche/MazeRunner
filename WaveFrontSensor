@@ -188,9 +188,9 @@ def perform(path):
         dy = path[i+1][1] - path[i][1]
 
         if obstacle():
-            display.show("Obstacle")
+            display.show("O")
             sleep(5000)
-            ax, ay = path[i+1]
+            ay, ax = path[i+1]
             if grid[ay][ax] == 0:
                 grid[ay][ax] = 1
                 display.show('!')
@@ -201,6 +201,7 @@ def perform(path):
                     return
                 show_grid()
                 show_path(new_path)
+                sleep(1000)
                 perform(new_path)
                 return
 
