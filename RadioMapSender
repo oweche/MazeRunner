@@ -1,0 +1,13 @@
+from microbit import *
+import radio
+
+chnl = 13  
+
+radio.config(channel=chnl)
+radio.on()
+grid_map = ("S01000010001110000101000X")
+sleep(500) 
+display.show(Image.ARROW_N)  # indicate sending
+radio.send(grid_map)
+sleep(200)
+display.show(Image.YES)  # confirm sent
