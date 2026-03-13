@@ -243,7 +243,7 @@ def left():
 
 def Drive(lft,rgt):
 # Receive the percent power to drive each motor in a specific direction
-    r.motor(M2B, lft * 1)
+    r.motor(M2B, lft * .95)
     r.motor(M1A, -rgt)
 
 
