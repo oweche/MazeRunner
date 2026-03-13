@@ -52,7 +52,7 @@ def distance(tp, ep):
 
 def obstacle():
     d = distance(TRIGGER, ECHO)
-    if d > 0 and d < 600:
+    if d > 0 and d < 200:
        return True
 
 # Parse the text grid -> (grid: 0/1), start, goal
