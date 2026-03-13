@@ -191,8 +191,8 @@ def perform(path):
             display.show("Obstacle")
             sleep(5000)
             ax, ay = path[i+1]
-            if grid[ax][ay] == 0:
-                grid[ax][ay] = 1
+            if grid[ay][ax] == 0:
+                grid[ay][ax] = 1
                 display.show('!')
                 sleep(400)
                 dist, new_path = wavefront(grid, path[i], goal)
