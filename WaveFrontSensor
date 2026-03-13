@@ -1,0 +1,267 @@
+# microbit_wavefront_5x5_symbols.py
+# Shows a 5x5 grid with barriers (1), open (0), start (S), end (X),
+# runs a wavefront (BFS) shortest path, and displays the path.
+
+from microbit import display, sleep
+from microbit import *
+import radio
+import robotbit_library as r
+from time import sleep_us
+from machine import time_pulse_us
+# Define Ports for the bank of high current output
+M1A = 0x1
+M1B = 0x2
+M2A = 0x3
+M2B = 0x4
+
+chnl = 13   #define channel to your team number
+
+r.setup()
+
+radio.config(channel=chnl)
+radio.on()
+
+W, H = 5, 5
+
+# Brightness map (0..9)
+BRIGHT_OPEN   = 1
+BRIGHT_WALL   = 5
+BRIGHT_START  = 6
+BRIGHT_END    = 8
+BRIGHT_PATH   = 9
+
+#Ultrasonic sensor
+TIME_OUT = 100000  # Increase time out to see farther, but
+# this will reduce the sample rate
+ECHO = pin1      # ping sensor uses a single pin for ECHO and Trigger
+TRIGGER = pin1
+
+def distance(tp, ep):
+    #tp is the trigger pin and ep is the echo pin
+    ep.read_digital()  # clear echo
+    tp.write_digital(1)  # Send a 10 microSec pulse
+    sleep_us(10)  # wait 10 microSec
+    tp.write_digital(0)  # Send pulse low
+    ep.read_digital()  # clear echo signal - This is needed for a pingSensor
+    
+    ts = time_pulse_us(ep, 1, TIME_OUT)  # Wait for echo or time out
+    if ts > 0:
+        ts = ts * 17 // 100  # if system did not timeout, then send
+        #back a scaled value
+    return ts  # Return timeout error as a negative number (-1)
+
+def obstacle():
+    d = distance(TRIGGER, ECHO)
+    if d > 0 and d < 600:
+       return True
+
+# Parse the text grid -> (grid: 0/1), start, goal
+def receive_map():
+    """Wait to receive a map string over radio and parse into grid_text rows."""
+    display.show(Image.ARROW_S)  # indicate waiting
+    while True:
+        msg = radio.receive()
+        if msg and len(msg) == W * H:
+            # Split the flat string into rows of length W
+            return [msg[i*W:(i+1)*W] for i in range(H)]
+        sleep(50)
+grid_text = receive_map()
+grid = [[0] * W for _ in range(H)]
+start = None
+goal = None
+
+for y, row in enumerate(grid_text):
+    if len(row) != W:
+        raise ValueError("Each row in grid_text must be length 5")
+    for x, ch in enumerate(row):
+        if ch == '1':
+            grid[y][x] = 1
+        elif ch == '0':
+            grid[y][x] = 0
+        elif ch == 'S':
+            start = (x, y)
+            grid[y][x] = 0  # start sits on open cell
+        elif ch == 'X':
+            goal = (x, y)
+            grid[y][x] = 0  # goal sits on open cell
+        else:
+            raise ValueError("Invalid character in grid_text: use '0','1','S','X' only")
+
+if start is None or goal is None:
+    raise ValueError("Grid must contain exactly one 'S' and one 'X'")
+
+def show_grid():
+    """Render the base grid with barriers, open cells, S, and X."""
+    for y in range(H):
+        for x in range(W):
+            if (x, y) == start:
+                b = BRIGHT_START
+            elif (x, y) == goal:
+                b = BRIGHT_END
+            elif grid[y][x] == 1:
+                b = BRIGHT_WALL
+            else:
+                b = BRIGHT_OPEN
+            display.set_pixel(x, y, b)
+
+def wavefront(g, start, goal):
+    """BFS on 4-neighborhood. Returns (dist, path).
+       dist[y][x] = steps from start; -1 if unreached.
+       path: list of (x,y) from start -> goal (inclusive), or [] if none."""
+    sx, sy = start
+    gx, gy = goal
+    if g[sy][sx] == 1 or g[gy][gx] == 1:
+        return None, []
+
+    dist = [[-1] * W for _ in range(H)]
+    dist[sy][sx] = 0
+
+    # Lightweight queue (two arrays + head index)
+    qx, qy = [sx], [sy]
+    head = 0
+
+    while head < len(qx):
+        x = qx[head]
+        y = qy[head]
+        head += 1
+
+        if x == gx and y == gy:
+            break
+
+        # Explore 4-connected neighbors
+        for nx, ny in ((x+1, y), (x-1, y), (x, y+1), (x, y-1)):
+            if 0 <= nx < W and 0 <= ny < H:
+                if g[ny][nx] == 0 and dist[ny][nx] == -1:
+                    dist[ny][nx] = dist[y][x] + 1
+                    qx.append(nx); qy.append(ny)
+
+    # No path?
+    if dist[gy][gx] == -1:
+        return dist, []
+
+    # Backtrack shortest path
+    path = [(gx, gy)]
+    x, y = gx, gy
+    d = dist[y][x]
+    while d > 0:
+        # choose neighbor with d-1
+        for nx, ny in ((x+1, y), (x-1, y), (x, y+1), (x, y-1)):
+            if 0 <= nx < W and 0 <= ny < H and dist[ny][nx] == d - 1:
+                path.append((nx, ny))
+                x, y = nx, ny
+                d -= 1
+                break
+    path.reverse()
+    return dist, path
+
+def animate_path_step(path):
+    """Draw the path once, step-by-step, leaving S and X as-is."""
+    if not path:
+        return
+    # Skip the first and last entries (start and goal) for drawing
+    for i, (x, y) in enumerate(path):
+        if (x, y) != start and (x, y) != goal:
+            display.set_pixel(x, y, BRIGHT_PATH)
+            sleep(130)
+
+def blink_path(path, times=2):
+    """Blink the final path over the base grid, for visibility."""
+    if not path:
+        return
+    
+    for _ in range(times):
+        # Turn on path pixels
+        show_path(path)
+        sleep(350)
+        # Restore base grid
+        show_grid()
+        sleep(250)
+
+def show_path(path):
+    for (x, y) in path:
+        if (x, y) != start and (x, y) != goal:
+            display.set_pixel(x, y, BRIGHT_PATH)
+
+def perform(path):
+    for i in range(len(path)-1):
+        dx = path[i+1][0] - path[i][0]
+        dy = path[i+1][1] - path[i][1]
+
+        if obstacle():
+            display.show("Obstacle")
+            sleep(5000)
+            ax, ay = path[i+1]
+            if grid[ax][ay] == 0:
+                grid[ax][ay] = 1
+                display.show('!')
+                sleep(400)
+                dist, new_path = wavefront(grid, path[i], goal)
+                if not new_path:
+                    display.scroll("NO PATH")
+                    return
+                show_grid()
+                show_path(new_path)
+                perform(new_path)
+                return
+
+        if dx == 1:      right()
+        elif dx == -1:   left()
+        elif dy == 1:   forward()
+        elif dy == -1:    backward()
+        sleep(200)
+def forward():
+    Drive(60, 60)
+    display.show(Image.ARROW_N)
+    sleep(950)
+    Drive(0,0)
+
+def backward():
+    Drive(-60, -60)
+    display.show(Image.ARROW_S)
+    sleep(950)
+    Drive(0,0)
+
+def right():
+    Drive(-60,60)
+    display.show(Image.ARROW_E)
+    sleep(350)
+    Drive(60,60)
+    sleep(870)
+    Drive(60, -60)
+    sleep(410)
+    Drive(0,0)
+
+def left():
+    Drive(60, -60)
+    display.show(Image.ARROW_W)
+    sleep(410)
+    Drive(60,60)
+    sleep(870)
+    Drive(-60, 60)
+    sleep(350)
+    Drive(0,0)
+
+def Drive(lft,rgt):
+# Receive the percent power to drive each motor in a specific direction
+    r.motor(M2B, lft * 1)
+    r.motor(M1A, -rgt)
+
+
+# ------------------------ Main flow ------------------------
+show_grid()
+sleep(700)  # Show initial map with barriers, S, and X
+
+dist, path = wavefront(grid, start, goal)
+
+if not path:
+    display.scroll("NO PATH")
+    show_grid()
+else:
+    # Draw the path on the device
+    animate_path_step(path)
+    blink_path(path, times=2)
+    show_path(path)
+    # End by leaving the full map visible
+    #show_grid()
+
+perform(path)
