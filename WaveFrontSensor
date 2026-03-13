@@ -36,6 +36,8 @@ TIME_OUT = 100000  # Increase time out to see farther, but
 ECHO = pin1      # ping sensor uses a single pin for ECHO and Trigger
 TRIGGER = pin1
 
+obstacle_found = False
+
 def distance(tp, ep):
     #tp is the trigger pin and ep is the echo pin
     ep.read_digital()  # clear echo
@@ -183,14 +185,16 @@ def show_path(path):
             display.set_pixel(x, y, BRIGHT_PATH)
 
 def perform(path):
+    global obstacle_found
     for i in range(len(path)-1):
         dx = path[i+1][0] - path[i][0]
         dy = path[i+1][1] - path[i][1]
 
-        if obstacle():
+        if obstacle() and obstacle_found == False:
+            obstacle_found = True
             display.show("O")
             sleep(5000)
-            ay, ax = path[i+1]
+            ax, ay = path[i+1]
             if grid[ay][ax] == 0:
                 grid[ay][ax] = 1
                 display.show('!')
@@ -246,7 +250,6 @@ def Drive(lft,rgt):
 # Receive the percent power to drive each motor in a specific direction
     r.motor(M2B, lft * .95)
     r.motor(M1A, -rgt)
-
 
 # ------------------------ Main flow ------------------------
 show_grid()
