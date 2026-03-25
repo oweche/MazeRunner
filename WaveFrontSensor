@@ -1,3 +1,28 @@
+"""
+===========================================================================++==
+ENGR 13000 Fall 2025
+
+Program Description
+    This program runs a wavefront solving algorithm on a 5x5 grid, where the grid is received via radio as a string. The grid contains barriers, a start point (S), and an end point (X). The program calculates the shortest path from S to X using a breadth-first search (BFS) approach and then animates the path on the micro:bit's LED display. Finally, it commands a robot to follow the calculated path.
+
+Assignment Information
+    Assignment:     Project 2 Final Report
+    Author:         Alex Myers, myers584@purdue.edu
+                    Devin Hidayat, dhidaya@purdue.edu
+                    Rohan Eapen, eapenr@purdue.edu
+                    Owen Chen, chen5686@purdue.edu
+    Team ID:        LC01 - 13
+
+    
+ACADEMIC INTEGRITY STATEMENT
+I have not used source code obtained from any other unauthorized
+source, either modified or unmodified. Neither have I provided
+access to my code to another. The project I am submitting
+is my own original work.
+=============================================================================++
+"""
+
+
 # microbit_wavefront_5x5_symbols.py
 # Shows a 5x5 grid with barriers (1), open (0), start (S), end (X),
 # runs a wavefront (BFS) shortest path, and displays the path.
